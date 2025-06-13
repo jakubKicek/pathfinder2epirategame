@@ -269,6 +269,10 @@
     return window.innerWidth < 768 ? 10 : 20; // 10px on mobile, 20px on desktop
   }
 
+  function getLineSpacing() {
+    return window.innerWidth < 768 ? 10 : 20; // 10px on mobile, 20px on desktop
+  }
+
   window.addEventListener('resize', () => {
     redrawMap(); // or whatever function re-renders your canvas
   });
@@ -378,22 +382,22 @@
   ctx.fillStyle = 'black';
   //ctx.font = 'bold 30px "Amarante", serif';
   ctx.font = `bold ${getCanvasFontSize()}px "Amarante", serif`;
-  let lineY = topLeftY+20;
+  let lineY = topLeftY + getLineSpacing();
 
   if(ifPustkowie==0){
     // Always reserve space for the city line
     ctx.fillText(nearbyCity ? `${nearbyCity}` : " ", topLeftX, lineY);
-    lineY += 40;
+    lineY += getLineSpacing();
 
     ctx.fillText(`${foundRegion}`, topLeftX, lineY);
-    lineY += 40;
+    lineY += getLineSpacing();
 
     ctx.fillText(`${distance.toFixed(2)}km ${theta.toFixed(2)}°`, topLeftX, lineY);
-    lineY += 40;
+    lineY += getLineSpacing();
     ctx.fillText(`Navigation DC +${navigationDC}`, topLeftX, lineY);
   }
   else{
-    lineY += 40;
+    lineY += getLineSpacing();
     ctx.fillText("Kliknij w punkt na mapie", topLeftX, lineY);
   }
   
