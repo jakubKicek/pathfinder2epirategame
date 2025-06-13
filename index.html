@@ -265,6 +265,14 @@
     { name: "Dundee", coords: [18.21, 23.39] }
   ];
 
+  function getCanvasFontSize() {
+    return window.innerWidth < 768 ? 10 : 20; // 10px on mobile, 20px on desktop
+  }
+
+  window.addEventListener('resize', () => {
+    redrawMap(); // or whatever function re-renders your canvas
+  });
+
   function drawMarkerAndLine(ctx, x, y) {
     const centerX = ((0 + offsetX) / xMax) * canvas.width;
     const centerY = ((0 + offsetY) / yMax) * canvas.height;
@@ -368,7 +376,8 @@
   const topLeftY = ((-30 + offsetY) / yMax) * canvas.height;
 
   ctx.fillStyle = 'black';
-  ctx.font = 'bold 30px "Amarante", serif';
+  //ctx.font = 'bold 30px "Amarante", serif';
+  ctx.font = `bold ${getCanvasFontSize()}px "Amarante", serif`;
   let lineY = topLeftY+20;
 
   if(ifPustkowie==0){
