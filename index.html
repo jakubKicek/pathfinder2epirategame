@@ -56,6 +56,8 @@
   <div id="header">
     <button id="politicalBtn">Mapa polityczna</button>
     <button id="seaBtn">Mapa morska</button>
+    <button id="seapolBtn">Mapa morska-polityczna</button>
+    <button id="navBtn">Mapa nawigacyjna</button>
   </div>
   
 <canvas id="mapCanvas"></canvas>
@@ -424,6 +426,8 @@
   
   const politicalMap = 'your-map.jpg'; // default
   const seaMap = 'sea-map.jpg';
+  const seapolMap = 'seapol-map.jpg';
+  const navMap = 'nav-map.jpg';
 
 function loadMap(src) {
   img.src = src;
@@ -435,6 +439,8 @@ function loadMap(src) {
 
 document.getElementById('politicalBtn').addEventListener('click', () => loadMap(politicalMap));
 document.getElementById('seaBtn').addEventListener('click', () => loadMap(seaMap));
+document.getElementById('seapolBtn').addEventListener('click', () => loadMap(seapolMap));
+document.getElementById('navBtn').addEventListener('click', () => loadMap(navMap));
 
 });
 
