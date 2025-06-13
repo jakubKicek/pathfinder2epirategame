@@ -59,6 +59,8 @@
   </div>
   
 <canvas id="mapCanvas"></canvas>
+<div id="mobileInfoBox" style="display: none; padding: 10px; font-family: 'Amarante', serif; font-size: 14px;"></div>
+
 <footer></footer>
 
 <script>
@@ -265,17 +267,7 @@
     { name: "Dundee", coords: [18.21, 23.39] }
   ];
 
-  function getCanvasFontSize() {
-    return window.innerWidth < 768 ? 10 : 20; // 10px on mobile, 20px on desktop
-  }
-
-  function getLineSpacing() {
-    return window.innerWidth < 768 ? 10 : 20; // 10px on mobile, 20px on desktop
-  }
-
-  window.addEventListener('resize', () => {
-    redrawMap(); // or whatever function re-renders your canvas
-  });
+  
 
   function drawMarkerAndLine(ctx, x, y) {
     const centerX = ((0 + offsetX) / xMax) * canvas.width;
@@ -322,6 +314,10 @@
     return null;
   }
 
+  function isMobile() {
+    return window.innerWidth < 768;
+  }
+
   canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
   const rawX = (e.clientX - rect.left) / canvas.width * xMax;
@@ -340,6 +336,8 @@
   const clickedPoint = [parseFloat(x.toFixed(2)), parseFloat(y.toFixed(2))];
   clickedPoints.push(clickedPoint);
   console.log("Clicked Points:", clickedPoints);
+
+  
 
   // Region detection
   let foundRegion = "Pełne morze";
@@ -380,26 +378,49 @@
   const topLeftY = ((-30 + offsetY) / yMax) * canvas.height;
 
   ctx.fillStyle = 'black';
-  //ctx.font = 'bold 30px "Amarante", serif';
-  ctx.font = `bold ${getCanvasFontSize()}px "Amarante", serif`;
-  let lineY = topLeftY + getLineSpacing();
+  ctx.font = 'bold 30px "Amarante", serif';
+  let lineY = topLeftY+20;
 
-  if(ifPustkowie==0){
-    // Always reserve space for the city line
-    ctx.fillText(nearbyCity ? `${nearbyCity}` : " ", topLeftX, lineY);
-    lineY += getLineSpacing();
-
-    ctx.fillText(`${foundRegion}`, topLeftX, lineY);
-    lineY += getLineSpacing();
-
-    ctx.fillText(`${distance.toFixed(2)}km ${theta.toFixed(2)}°`, topLeftX, lineY);
-    lineY += getLineSpacing();
-    ctx.fillText(`Navigation DC +${navigationDC}`, topLeftX, lineY);
+  const regionText = `${foundRegion}`;
+  const cityText = nearbyCity ? `${nearbyCity}` : ' ';
+  const distanceText = `${distance.toFixed(2)}km`;
+  const angleText = `${theta.toFixed(2)}°`;
+  const dcText = `Navigation DC +${Math.floor(distance / 100)}`;
+  let ifmobile = isMobile();
+  if (ifmobile) {
+    if(ifPustkowie==0){
+      document.getElementById("mobileInfoBox").style.display = "block";
+      document.getElementById("mobileInfoBox").innerHTML =
+        `${cityText}<br>${regionText}<br>${distanceText}<br>${angleText}<br>${dcText}`;
+    }
+    else{
+      document.getElementById("mobileInfoBox").style.display = "block";
+      document.getElementById("mobileInfoBox").innerHTML =
+        "Kliknij w punkt na mapie";
+    }
   }
   else{
-    lineY += getLineSpacing();
-    ctx.fillText("Kliknij w punkt na mapie", topLeftX, lineY);
+    document.getElementById("mobileInfoBox").style.display = "block";
+    if(ifPustkowie==0){
+    // Always reserve space for the city line
+    ctx.fillText(nearbyCity ? `${nearbyCity}` : " ", topLeftX, lineY);
+    lineY += 40;
+
+    ctx.fillText(`${foundRegion}`, topLeftX, lineY);
+    lineY += 40;
+
+    ctx.fillText(`${distance.toFixed(2)}km ${theta.toFixed(2)}°`, topLeftX, lineY);
+    lineY += 40;
+    ctx.fillText(`Navigation DC +${navigationDC}`, topLeftX, lineY);
+    }
+
+    else{
+      lineY += 40;
+      ctx.fillText("Kliknij w punkt na mapie", topLeftX, lineY);
+    }
   }
+
+  
   
   const politicalMap = 'your-map.jpg'; // default
   const seaMap = 'sea-map.jpg';
