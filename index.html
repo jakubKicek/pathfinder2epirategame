@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Map Click Coordinates</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amarante&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Amarante', serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    #coordLabel, #distanceLabel, #regionLabel, #cityLabel, footer {
+      margin: 10px auto;
+      font-size: 10px;
+      font-weight: bold;
+      height: 28px;
+    }
+
+    #mapCanvas {
+      border: 1px solid #000;
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    footer {
+      margin-top: auto;
+    }
+
+    #header {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px auto;
+    }
+
+    #header button {
+      padding: 5px 10px;
+      font-family: 'Modern Antiqua', serif;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+
+  </style>
+  
+</head>
+<body>
+  <div id="header">
+    <button id="politicalBtn">Mapa polityczna</button>
+    <button id="seaBtn">Mapa morska</button>
+  </div>
+  
+<canvas id="mapCanvas"></canvas>
+<footer></footer>
+
+<script>
+  const clickedPoints = [];
+
+  const canvas = document.getElementById('mapCanvas');
+  const ctx = canvas.getContext('2d');
+  const coordLabel = document.getElementById('coordLabel');
+  const distanceLabel = document.getElementById('distanceLabel');
+  const regionLabel = document.getElementById('regionLabel');
+  const cityLabel = document.getElementById('cityLabel');
+
+  const deviceWidth = window.innerWidth;
+  const canvasWidth = deviceWidth * 0.9;
+  const canvasHeight = deviceWidth * 0.63;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+
+  let lastClickPoint = null;
+  let showMarker = true;
+
+  const xMax = 90;
+  const yMax = 63;
+  const offsetX = 61.5;
+  const offsetY = 34.5;
+  const scaleFactor = 100;
+
+  const img = new Image();
+  img.src = 'your-map.jpg'; // Replace with actual image
+  img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // Regions (polygon-based)
+  const regions = [
+    {
+      name: "nic tu nie ma",
+      district: "Pustkowie",
+      points: [[-61.27,5.1],[-52.46,-3.7],[-50.59,-3.65],[-49.49,-4.59],[-41.47,-4.54],[-38.51,-7.66],[-36.53,-7.61],[-33.56,-10.63],[-30.54,-10.74],[-30.38,-16.73],[-25.43,-21.73],[-24.39,-21.73],[-24.39,-23.66],[-19.44,-28.66],[-19.49,-30.75],[-16.32,-34.19],[-60.95,-34.14]]
+    },
+    {
+      name: "Pełne morze",
+      district: "Archipelag Hindarsfjall",
+      points: [[1.03,-24.65],[1.03,-27.73],[2.22,-28.61],[7.07,-28.72],[8.06,-27.62],[8.11,-24.18],[7.17,-23.3],[2.12,-23.35]]
+    },
+    {
+      name: "Unia Technokratyczna",
+      district: "Jazzirat",
+      points: [[-61, 11.10], [-53.5, 11], [-48, 5.5],[-46.5, 5.5], [-43.5, 8], [-43.5, 16],[-45.5, 18], [-57.5, 18], [-61, 22]]
+    },
+    {
+      name: "Unia Technokratyczna",
+      district: "Zacatlan",
+      points: [[-61.37, 5.1],[-52.36, -3.55],[-50.48, -3.65],[-49.44, -4.64],[-46.37, -4.64],[-46.53, 5.73],[-47.93, 5.83],[-53.51, 11.41],[-61.16, 11.41]]
+    },
+    {
+      name: "Unia Technokratyczna",
+      district: "Teyshara",
+      points: [[-61.32, 20.27],[-59.55, 20.21],[-57.41, 18.23],[-45.54, 18.18],[-45.43, 28.14],[-61.16, 28.29]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Tzitzimotal",
+      points: [[-46.42, -4.64],[-41.37, -4.69],[-38.4, -7.66],[-36.47, -7.61],[-36.47, -2.66],[-33.51, 0.2],[-33.51, 2.24],[-35.54, 5.31],[-35.48, 5.68],[-36.47, 6.35],[-36.47, 7.81],[-43.4, 7.81],[-46.53, 5.73]]
+    },
+    {
+      name: "Republika Demokratyczna Libertalii",
+      district: "Libertalia",
+      points: [[-36.42,-7.66],[-33.45,-10.69],[-30.48,-10.63],[-27.62,-7.82],[-24.44,-7.72],[-24.49,0.05],[-30.43,6.41],[-30.48,12.29],[-31.42,13.28],[-33.61,13.23],[-35.54,10.37],[-35.54,8.44],[-36.58,7.86],[-36.47,6.3],[-35.48,5.94],[-35.43,5.31],[-33.56,2.29],[-33.51,0.52],[-36.47,-2.5]]
+    },
+    {
+      name: "Pełne morze",
+      district: "Archipelag Santa Clara",
+      points: [[-27.93,8.75],[-26.99,7.71],[-23.09,7.66],[-21.99,8.8],[-21.89,12.87],[-22.93,13.81],[-23.92,13.81],[-24.91,12.66],[-26.84,12.76],[-27.88,11.93]]
+    },
+    {
+      name: "Wieczne Królestwo Śmierci",
+      district: "Mortanica",
+      points: [[-45.54,18.34],[-43.45,16.31],[-35.48,16.36],[-32.41,19.33],[-27.41,19.33],[-27.41,28.45]]
+    },
+    {
+      name: "Unia Technokratyczna",
+      district: "Vaelora",
+      points: [[-28.45,15.32],[-28.45,13.44],[-27.98,12.76],[-24.96,12.76],[-24.49,13.54],[-24.44,15.37],[-25.28,15.89],[-27.83,15.73]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Terra Fungi",
+      points: [[-27.46,28.19],[-27.52,19.28],[-16.99,19.33],[-15.95,18.34],[-15.95,16.36],[-14.96,15.32],[-13.92,16.41],[-7.57,16.31],[-7.46,28.08]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Katapesh",
+      points: [[-19.44,-2.71],[-5.43,-16.68],[-2.46,-16.57],[-1.01,-15.27],[-0.95,-12.25],[-10.48,-2.77],[-10.43,0.31],[-16.89,0.36]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Ak'kad",
+      points: [[-21.47,-1.72],[-20.54,-2.66],[-19.39,-2.66],[-16.94,0.26],[-16.99,8.18],[-18.51,8.18],[-20.38,8.28],[-21.53,7.29]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Solaro",
+      points: [[-16.99,0.36],[-10.54,0.2],[-9.49,1.35],[-9.55,4.32],[-6.42,7.29],[-6.42,11.3],[-7.57,12.4],[-9.65,12.24],[-12.36,9.27],[-15.9,9.27],[-16.94,8.28]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Nantambu",
+      points: [[-18.56,8.33],[-16.94,8.28],[-15.9,9.43],[-12.52,9.43],[-9.65,12.19],[-7.52,12.29],[-7.46,16.31],[-13.92,16.36],[-14.96,15.37],[-15.9,16.36],[-17.36,16.31],[-18.35,15.47]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Skylands",
+      points: [[-7.52,12.35],[-5.48,10.26],[1.96,10.26],[2.02,11.25],[2.59,11.77],[2.59,20.27],[0.51,22.35],[0.61,28.4],[-7.36,28.24]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Isla Nublar",
+      points: [[2.59,11.77],[7.95,11.77],[11.96,15.79],[12.02,19.33],[2.48,19.22]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Isla Sorna",
+      points: [[2.54,19.33],[12.02,19.28],[12.12,28.29],[0.56,28.29],[0.45,22.19],[2.54,20.32]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Wiktoria",
+      points: [[2.43,9.9],[9.57,9.84],[14.62,14.9],[16.55,14.85],[17.43,13.86],[17.48,7.55],[16.65,6.51],[16.44,0.31],[21.55,-5.79],[21.49,-7.61],[23.47,-9.59],[28.42,-9.59],[28.21,28.29],[12.02,28.19],[12.07,15.84],[8.01,11.77],[2.64,11.83],[2.07,11.36],[2.07,10.47]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Matsubara",
+      points: [[4.52,-7.66],[4.52,-10.74],[10.56,-16.83],[12.38,-16.73],[13.42,-17.41],[13.42,-25.8],[15.51,-27.67],[15.45,-34.29],[28.42,-34.29],[28.27,-9.8],[23.53,-9.8],[21.44,-7.72],[21.55,-5.63],[16.6,0.47],[13.53,-2.71],[9.57,-2.66]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Frostheim",
+      points: [[-24.49,-21.73],[-24.49,-23.71],[-19.39,-28.66],[-19.49,-30.8],[-16.21,-34.29],[-3.51,-34.34],[-3.45,-23.82],[-6.53,-20.64],[-18.45,-20.69],[-19.44,-21.63]]
+    },
+    {
+      name: "Wielka Republika Oceaniczna",
+      district: "Gnompignon",
+      points: [[-2.05,-3.7],[1.49,-3.65],[3.94,-1.2],[4.05,2.34],[1.55,4.89],[-1.99,4.84],[-4.55,2.55],[-4.6,-1.25]]
+    },
+    {
+      name: "Smocze Terytorium",
+      district: "Drakonia",
+      points: [[-30.43,-10.74],[-30.43,-16.73],[-25.54,-21.68],[-19.44,-21.68],[-18.4,-20.74],[-10.54,-20.8],[-10.48,-17.77],[-14.49,-13.71],[-18.4,-13.71],[-24.39,-7.66],[-27.52,-7.66]]
+    },
+    {
+      name: "Pełne morze",
+      district: "Archipelag Marudera",
+      points: [[9.52,9.84],[9.62,7.4],[10.51,6.35],[16.49,6.3],[17.43,7.24],[17.54,13.81],[16.65,14.74],[14.62,14.8]]
+    }
+  ];
+
+  // Cities (point-based)
+  const cities = [
+    { name: "Netnova", coords: [-52.93, 14.69] },
+    { name: "Technoturk", coords: [-56.27, 12.76] },
+    { name: "Enerkaya", coords: [-50.5, 11] },
+    { name: "Ankortek", coords: [-48, 8.5] },
+    { name: "Tepozco", coords: [-53, 7.24] },
+    { name: "Teyshara", coords: [-57, 22.3] },
+    { name: "Yohualtepec", coords: [,-43.3, 0.15 ] },
+    { name: "Izcan", coords: [-38.3, -5 ] },
+    { name: "Tlamichan", coords: [-40, -2] },
+    { name: "Nexcoatl", coords: [-38.3, 3] },
+    { name: "Xalom", coords: [-42, 4] },
+    { name: "Gravehollow", coords: [-41.6, 19.2] },
+    { name: "Necropolis", coords: [-36.6, 25.6] },
+    { name: "Vaelora", coords: [-26.5, 14] },
+    { name: "Puffmire", coords: [-14.4, 21.6] },
+    { name: "Key Largo", coords: [-33.5, 6] },
+    { name: "Freeburg", coords: [-30.6, 2.6] },
+    { name: "Liberty City", coords: [-28.5, -0.6] },
+    { name: "Redhook", coords: [-28, -3.5] },
+    { name: "Dreamsprings", coords: [-32.8, -6.8] },
+    { name: "Nimara", coords: [-19.2, 1.14] },
+    { name: "Katan", coords: [-18.8, 5.2] },
+    { name: "Tambuka", coords: [-14.4, 11.2] },
+    { name: "Skarhaven", coords: [-14.6, -30] },
+    { name: "Kenobara", coords: [-6.5, -10.6] },
+    { name: "Jamandi", coords: [-9.8, -6.6] },
+    { name: "Naqbal", coords: [-14, -2] },
+    { name: "Thsareen", coords: [-15, -5] },
+    { name: "Fort Igni", coords: [-14.5, 2.3] },
+    { name: "Sunspire", coords: [-10.6, 5.5] },
+    { name: "Auravante", coords: [-13.4, 6.35] },
+    { name: "Flamora", coords: [-10.7, 8.4] },
+    { name: "Gastronomican", coords: [0, 0] },
+    { name: "Shirohane", coords: [13, -13.4] },
+    { name: "Kuroyama", coords: [14.26, -9.2] },
+    { name: "Takamura", coords: [18.11, -16.3] },
+    { name: "Tsurukan", coords: [21.3, -27.1] },
+    { name: "Aldenshire", coords: [24.7, -1.7] },
+    { name: "Victoria", coords: [22.8, 2.45] },
+    { name: "Lockerdam", coords: [23.53, 5.16] },
+    { name: "Rosethorn", coords: [23.73, 9.38] },
+    { name: "Velbridge", coords: [23.53, 11.93] },
+    { name: "Blueport", coords: [22.7, 15.37] },
+    { name: "Whithelm", coords: [20.45, 18] },
+    { name: "Duskharow", coords: [14.36, 21.2] },
+    { name: "Batterhome", coords: [24.2, 20.74] },
+    { name: "Dundee", coords: [18.21, 23.39] }
+  ];
+
+  function drawMarkerAndLine(ctx, x, y) {
+    const centerX = ((0 + offsetX) / xMax) * canvas.width;
+    const centerY = ((0 + offsetY) / yMax) * canvas.height;
+    const screenX = ((x + offsetX) / xMax) * canvas.width;
+    const screenY = ((y + offsetY) / yMax) * canvas.height;
+
+    // Draw red circle
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+
+    // Draw line to (0,0)
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(screenX, screenY);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+
+  function isPointInPolygon(x, y, polygon) {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i][0], yi = polygon[i][1];
+      const xj = polygon[j][0], yj = polygon[j][1];
+
+      const intersect = ((yi > y) !== (yj > y)) &&
+                        (x < (xj - xi) * (y - yi) / (yj - yi + 0.00000001) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function findNearbyCity(x, y, cities, threshold = 0.5) {
+    for (const city of cities) {
+      const dx = city.coords[0] - x;
+      const dy = city.coords[1] - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist <= threshold) return city.name;
+    }
+    return null;
+  }
+
+  canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const rawX = (e.clientX - rect.left) / canvas.width * xMax;
+  const rawY = (e.clientY - rect.top) / canvas.height * yMax;
+  const x = rawX - offsetX;
+  const y = rawY - offsetY;
+  const distance = Math.sqrt(x * x + y * y) * scaleFactor;
+  const navigationDC = Math.floor(distance / 500);
+
+
+  const r = Math.sqrt(x * x + y * y);
+  let theta = Math.atan2(-y, x) * (180 / Math.PI); // Flipped Y for correct direction
+  if (theta < 0) theta += 360;
+
+  // Record the clicked point
+  const clickedPoint = [parseFloat(x.toFixed(2)), parseFloat(y.toFixed(2))];
+  clickedPoints.push(clickedPoint);
+  console.log("Clicked Points:", clickedPoints);
+
+  // Region detection
+  let foundRegion = "Pełne morze";
+  let ifPustkowie = 0;
+  for (const region of regions) {
+    if (isPointInPolygon(x, y, region.points)) {
+      foundRegion = `${region.district}, ${region.name}`;
+      if (region.district === "Pustkowie"){
+        ifPustkowie=1;
+      }
+      break;
+    }
+  }
+
+  // If "Pustkowie", clear marker
+  if (ifPustkowie==1) {
+    lastClickPoint = null;
+    showMarker = false;
+  } else {
+    lastClickPoint = { x, y };
+    showMarker = true;
+  }
+
+  // City detection
+  const nearbyCity = findNearbyCity(x, y, cities);
+  const locationLine = nearbyCity ? `${nearbyCity}, ${foundRegion}` : foundRegion;
+
+  // Redraw map
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  if (showMarker && lastClickPoint) {
+    drawMarkerAndLine(ctx, lastClickPoint.x, lastClickPoint.y);
+  }
+
+  // Draw transparent info box (just text)
+  const topLeftX = ((-55 + offsetX) / xMax) * canvas.width;
+  const topLeftY = ((-30 + offsetY) / yMax) * canvas.height;
+
+  ctx.fillStyle = 'black';
+  ctx.font = 'bold 30px "Amarante", serif';
+  let lineY = topLeftY+20;
+
+  if(ifPustkowie==0){
+    // Always reserve space for the city line
+    ctx.fillText(nearbyCity ? `${nearbyCity}` : " ", topLeftX, lineY);
+    lineY += 40;
+
+    ctx.fillText(`${foundRegion}`, topLeftX, lineY);
+    lineY += 40;
+
+    ctx.fillText(`${distance.toFixed(2)}km ${theta.toFixed(2)}°`, topLeftX, lineY);
+    lineY += 40;
+    ctx.fillText(`Navigation DC +${navigationDC}`, topLeftX, lineY);
+  }
+  else{
+    lineY += 40;
+    ctx.fillText("Kliknij w punkt na mapie", topLeftX, lineY);
+  }
+  
+  const politicalMap = 'your-map.jpg'; // default
+  const seaMap = 'sea-map.jpg';
+
+function loadMap(src) {
+  img.src = src;
+  img.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+}
+
+document.getElementById('politicalBtn').addEventListener('click', () => loadMap(politicalMap));
+document.getElementById('seaBtn').addEventListener('click', () => loadMap(seaMap));
+
+});
+
+
+
+
+</script>
+
+</body>
+</html>

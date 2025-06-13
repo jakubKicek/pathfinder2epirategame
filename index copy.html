@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Map Click Coordinates</title>
+  <link href="https://fonts.googleapis.com/css2?family=Modern+Antiqua&display=swap" rel="stylesheet">
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    #coordLabel, #distanceLabel, #regionLabel, #cityLabel, footer {
+      margin: 10px auto;
+      font-size: 10px;
+      font-weight: bold;
+      height: 28px;
+    }
+
+    #mapCanvas {
+      border: 1px solid #000;
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    footer {
+      margin-top: auto;
+    }
+  </style>
+  
+</head>
+<body>
+
+<canvas id="mapCanvas"></canvas>
+<footer></footer>
+
+<script>
+  const canvas = document.getElementById('mapCanvas');
+  const ctx = canvas.getContext('2d');
+  const coordLabel = document.getElementById('coordLabel');
+  const distanceLabel = document.getElementById('distanceLabel');
+  const regionLabel = document.getElementById('regionLabel');
+  const cityLabel = document.getElementById('cityLabel');
+
+  const deviceWidth = window.innerWidth;
+  const canvasWidth = deviceWidth * 0.9;
+  const canvasHeight = deviceWidth * 0.63;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+
+  const xMax = 90;
+  const yMax = 63;
+  const offsetX = 61.5;
+  const offsetY = 34.5;
+  const scaleFactor = 100;
+
+  const img = new Image();
+  img.src = 'your-map.jpg'; // Replace with actual image
+  img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // Regions (polygon-based)
+  const regions = [
+    {
+      name: "Unia Technokratyczna",
+      district: "Jazirat",
+      points: [
+        [-61, 11.10], [-53.5, 11], [-48, 5.5],
+        [-46.5, 5.5], [-43.5, 8], [-43.5, 16],
+        [-45.5, 18], [-57.5, 18], [-61, 22]
+      ]
+    }
+  ];
+
+  // Cities (point-based)
+  const cities = [
+    { name: "Netnowa", coords: [-52.93, 14.69] },
+    { name: "Technoturk", coords: [-56.27, 12.76] }
+  ];
+
+  function isPointInPolygon(x, y, polygon) {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i][0], yi = polygon[i][1];
+      const xj = polygon[j][0], yj = polygon[j][1];
+
+      const intersect = ((yi > y) !== (yj > y)) &&
+                        (x < (xj - xi) * (y - yi) / (yj - yi + 0.00000001) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function findNearbyCity(x, y, cities, threshold = 0.5) {
+    for (const city of cities) {
+      const dx = city.coords[0] - x;
+      const dy = city.coords[1] - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist <= threshold) return city.name;
+    }
+    return null;
+  }
+
+  canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const rawX = (e.clientX - rect.left) / canvas.width * xMax;
+  const rawY = (e.clientY - rect.top) / canvas.height * yMax;
+  const x = rawX - offsetX;
+  const y = rawY - offsetY;
+  const distance = Math.sqrt(x * x + y * y) * scaleFactor;
+
+  // Region detection
+  let foundRegion = "Otwarte morze";
+  for (const region of regions) {
+    if (isPointInPolygon(x, y, region.points)) {
+      foundRegion = `${region.district}, ${region.name}`;
+      break;
+    }
+  }
+
+  // City detection
+  const nearbyCity = findNearbyCity(x, y, cities);
+  const locationLine = nearbyCity ? `${nearbyCity}, ${foundRegion}` : foundRegion;
+
+  // Redraw map
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // Draw transparent info box (just text)
+  const topLeftX = ((-55 + offsetX) / xMax) * canvas.width;
+  const topLeftY = ((-30 + offsetY) / yMax) * canvas.height;
+
+  ctx.fillStyle = 'black';
+  ctx.font = 'bold 32px "Modern Antiqua", serif';
+  ctx.fillText(`Współrzędne: (${x.toFixed(2)}, ${y.toFixed(2)})`, topLeftX, topLeftY + 40);
+  ctx.fillText(`Dystans: ${distance.toFixed(2)} km`, topLeftX, topLeftY + 80);
+  ctx.fillText(locationLine, topLeftX, topLeftY + 120);
+});
+
+
+
+
+</script>
+
+</body>
+</html>
