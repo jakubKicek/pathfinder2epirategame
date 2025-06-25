@@ -48,24 +48,54 @@
       cursor: pointer;
     }
 
+    #header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+}
 
+#navBox {
+  justify-content: left;
+  font-size: 2em;
+  font-weight: bold;
+  /* height: 3.6em; */
+  padding: 0px;
+}
+
+#navCoords, #navDistance, #navAngle, #navDC{
+  margin: 0px;
+}
+#foot {
+  height: 0.5em;
+}
   </style>
   
 </head>
 <body>
   <div id="header">
-    <button id="politicalBtn">Mapa polityczna</button>
-    <button id="seaBtn">Mapa morska</button>
-    <button id="seapolBtn">Mapa morska-polityczna</button>
-    <button id="navBtn">Mapa nawigacyjna</button>
+    <div id="buttonRow">
+      <button id="polBtn">Mapa polityczna</button>
+      <button id="seaBtn">Mapa morska</button>
+      <button id="aromaBtn">Mapa aromatyczna</button>
+      <a href="https://www.legendkeeper.com/app/cmca1i61s01sa0ilhbn5011xr" target="_blank">
+        <button id="externalLink">Wróć do Wiki</button>
+      </a>
+    </div>
   </div>
-  
-<canvas id="mapCanvas"></canvas>
-<div id="mobileInfoBox" style="display: none; padding: 10px; font-family: 'Amarante', serif; font-size: 14px;"></div>
-
-<footer></footer>
+  <div id="navBox">
+    <p id="navCoords">Kliknij</p>
+    <span id="navDistance">w punkt</span>
+    <span id="navAngle"> na mapie</span>
+    <p id="navDC">poniżej</p>
+  </div>
+  <div id="foot"></div>
+  <canvas id="mapCanvas"></canvas>
+  <footer></footer>
 
 <script>
+  let lastClickedPoint = null; // [x, y] in map coordinates
   const clickedPoints = [];
 
   const canvas = document.getElementById('mapCanvas');
@@ -91,7 +121,7 @@
   const scaleFactor = 100;
 
   const img = new Image();
-  img.src = 'your-map.jpg'; // Replace with actual image
+  img.src = 'pol-map.jpg'; // Replace with actual image
   img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   // Regions (polygon-based)
@@ -269,8 +299,6 @@
     { name: "Dundee", coords: [18.21, 23.39] }
   ];
 
-  
-
   function drawMarkerAndLine(ctx, x, y) {
     const centerX = ((0 + offsetX) / xMax) * canvas.width;
     const centerY = ((0 + offsetY) / yMax) * canvas.height;
@@ -291,7 +319,6 @@
     ctx.lineWidth = 2;
     ctx.stroke();
   }
-
 
   function isPointInPolygon(x, y, polygon) {
     let inside = false;
@@ -329,13 +356,13 @@
   const distance = Math.sqrt(x * x + y * y) * scaleFactor;
   const navigationDC = Math.floor(distance / 500);
 
-
   const r = Math.sqrt(x * x + y * y);
   let theta = Math.atan2(-y, x) * (180 / Math.PI); // Flipped Y for correct direction
   if (theta < 0) theta += 360;
 
   // Record the clicked point
   const clickedPoint = [parseFloat(x.toFixed(2)), parseFloat(y.toFixed(2))];
+  lastClickedPoint = clickedPoint;
   clickedPoints.push(clickedPoint);
   console.log("Clicked Points:", clickedPoints);
 
@@ -383,69 +410,70 @@
   ctx.font = 'bold 30px "Amarante", serif';
   let lineY = topLeftY+20;
 
-  const regionText = `${foundRegion}`;
+  
   const cityText = nearbyCity ? `${nearbyCity}` : ' ';
+  const regionText = `${foundRegion} ${cityText}`;
   const distanceText = `${distance.toFixed(2)}km`;
   const angleText = `${theta.toFixed(2)}°`;
-  const dcText = `Navigation DC +${Math.floor(distance / 100)}`;
+  const dcText = `Navigation DC +${Math.floor(distance / 500)}`;
   let ifmobile = isMobile();
-  if (ifmobile) {
-    if(ifPustkowie==0){
-      document.getElementById("mobileInfoBox").style.display = "block";
-      document.getElementById("mobileInfoBox").innerHTML =
-        `${cityText}<br>${regionText}<br>${distanceText}<br>${angleText}<br>${dcText}`;
-    }
-    else{
-      document.getElementById("mobileInfoBox").style.display = "block";
-      document.getElementById("mobileInfoBox").innerHTML =
-        "Kliknij w punkt na mapie";
-    }
-  }
-  else{
-    document.getElementById("mobileInfoBox").style.display = "block";
-    if(ifPustkowie==0){
-    // Always reserve space for the city line
-    ctx.fillText(nearbyCity ? `${nearbyCity}` : " ", topLeftX, lineY);
-    lineY += 40;
 
-    ctx.fillText(`${foundRegion}`, topLeftX, lineY);
-    lineY += 40;
+  document.getElementById('navCoords').textContent = regionText;
+  document.getElementById('navDistance').textContent = distanceText;
+  document.getElementById('navAngle').textContent = angleText;
+  document.getElementById('navDC').textContent = dcText;
 
-    ctx.fillText(`${distance.toFixed(2)}km ${theta.toFixed(2)}°`, topLeftX, lineY);
-    lineY += 40;
-    ctx.fillText(`Navigation DC +${navigationDC}`, topLeftX, lineY);
-    }
+  // if (ifmobile) {
+  //   if(ifPustkowie==0){
+  //     document.getElementById("mobileInfoBox").style.display = "block";
+  //     document.getElementById("mobileInfoBox").innerHTML =
+  //       `${cityText}<br>${regionText}<br>${distanceText}<br>${angleText}<br>${dcText}`;
+  //   }
+  //   else{
+  //     document.getElementById("mobileInfoBox").style.display = "block";
+  //     document.getElementById("mobileInfoBox").innerHTML =
+  //       "Kliknij w punkt na mapie";
+  //   }
+  // }
+  // else{
+  //   document.getElementById("mobileInfoBox").style.display = "block";
+  //   if(ifPustkowie==0){
+  //   // Always reserve space for the city line
+  //   ctx.fillText(nearbyCity ? `${nearbyCity}` : " ", topLeftX, lineY);
+  //   lineY += 40;
 
-    else{
-      lineY += 40;
-      ctx.fillText("Kliknij w punkt na mapie", topLeftX, lineY);
-    }
-  }
+  //   ctx.fillText(`${foundRegion}`, topLeftX, lineY);
+  //   lineY += 40;
 
-  
-  
-  const politicalMap = 'your-map.jpg'; // default
+  //   ctx.fillText(`${distance.toFixed(2)}km ${theta.toFixed(2)}°`, topLeftX, lineY);
+  //   lineY += 40;
+  //   ctx.fillText(`Navigation DC +${navigationDC}`, topLeftX, lineY);
+  //   }
+
+  //   else{
+  //     lineY += 40;
+  //     ctx.fillText("Kliknij w punkt na mapie", topLeftX, lineY);
+  //   }
+  // }
+
+  const polMap = 'pol-map.jpg'; // default
   const seaMap = 'sea-map.jpg';
-  const seapolMap = 'seapol-map.jpg';
-  const navMap = 'nav-map.jpg';
+  const aromaMap = 'aroma-map.jpg';
 
 function loadMap(src) {
   img.src = src;
   img.onload = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    drawMarkerAndLine(ctx, lastClickPoint.x, lastClickPoint.y);
   };
 }
 
-document.getElementById('politicalBtn').addEventListener('click', () => loadMap(politicalMap));
+document.getElementById('polBtn').addEventListener('click', () => loadMap(polMap));
 document.getElementById('seaBtn').addEventListener('click', () => loadMap(seaMap));
-document.getElementById('seapolBtn').addEventListener('click', () => loadMap(seapolMap));
-document.getElementById('navBtn').addEventListener('click', () => loadMap(navMap));
+document.getElementById('aromaBtn').addEventListener('click', () => loadMap(aromaMap));
 
 });
-
-
-
 
 </script>
 
